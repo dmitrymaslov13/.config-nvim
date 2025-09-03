@@ -11,17 +11,40 @@ vim.opt.rtp:prepend(lazypath)
 
 -- плагины
 require("lazy").setup({
-  -- Telescope для поиска файлов
-  { 
-    "nvim-telescope/telescope.nvim", 
-    dependencies = { "nvim-lua/plenary.nvim" } 
-  },
-
-  -- Telescope file browser
-  { 
-    "nvim-telescope/telescope-file-browser.nvim", 
-    dependencies = { "nvim-telescope/telescope.nvim" } 
-  },
+      -- Telescope для поиска файлов
+    { 
+        "nvim-telescope/telescope.nvim", 
+        dependencies = { "nvim-lua/plenary.nvim" } 
+    },
+    
+    {
+      "nvim-neo-tree/neo-tree.nvim",
+      branch = "v3.x",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-tree/nvim-web-devicons", -- иконки
+        "MunifTanjim/nui.nvim",
+      },
+      config = function()
+        require("neo-tree").setup({
+          window = {
+            position = "float", -- 👈 открываем дерево по центру экрана
+            width = 50,
+            height = 20,
+          },
+          follow_current_file = {
+              enabled = true,   -- 👈 следим за текущим файлом
+              leave_dirs_open = false, -- закрывать несвязанные папки
+          },
+          filesystem = {
+            filtered_items = { 
+                hide_dotfiles = false, -- показывать скрытые файлы
+                hide_gitignored = true,
+            },
+          },
+        })
+      end
+    }
 })
 
 -- пробел как leader
@@ -40,26 +63,9 @@ vim.opt.clipboard = "unnamedplus"
 -- Telescope keymap
 vim.api.nvim_set_keymap('n', '<leader>ff', ':Telescope find_files<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>fg', ':Telescope live_grep<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fb', ':Telescope file_browser<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap(
-  'n',
-  '<leader>fp',
-  ":Telescope file_browser path=%:p:h<CR>",
-  { noremap = true, silent = true }
-)
 
--- Кеймап: открыть file browser относительно корня проекта (git root)
-vim.api.nvim_set_keymap(
-  'n',
-  '<leader>fg',
-  ":Telescope file_browser path=%:p:h cwd=$(git rev-parse --show-toplevel)<CR>",
-  { noremap = true, silent = true }
-)
+-- Дерево файлов
+vim.api.nvim_set_keymap('n', '<leader>e', ':Neotree reveal toggle<CR>', { silent = true })
 
--- Кеймап: открыть file browser относительно открытой директории в vim
-vim.api.nvim_set_keymap(
-  'n',
-  '<leader>fr',
-  ":Telescope file_browser path=%:p:h cwd=vim.loop.cwd()<CR>",
-  { noremap = true, silent = true }
-)
+-- Сброс поиска
+vim.api.nvim_set_keymap('n', '<leader>h', ':nohl<CR>', { silent = true })
