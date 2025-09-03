@@ -43,6 +43,7 @@ require("lazy").setup({
             },
           },
         })
+
       end
     }
 })
@@ -66,6 +67,11 @@ vim.api.nvim_set_keymap('n', '<leader>fg', ':Telescope live_grep<CR>', { noremap
 
 -- Дерево файлов
 vim.api.nvim_set_keymap('n', '<leader>e', ':Neotree reveal toggle<CR>', { silent = true })
+-- мапы внутри дерева (в normal mode)
+-- a → создать файл/папку
+-- d → удалить
+-- r → переименовать
+-- <CR> → открыть файл в текущем окне
 
 -- Сброс поиска
 vim.api.nvim_set_keymap('n', '<leader>h', ':nohl<CR>', { silent = true })
