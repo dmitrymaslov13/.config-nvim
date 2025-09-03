@@ -120,6 +120,23 @@ require("lazy").setup({
 
 })
 
+require("telescope").setup({
+  pickers = {
+    buffers = {
+      sort_mru = true,      -- сортировать по последнему использованию
+      mappings = {
+--        i = {
+--         ["<C-D>"] = "delete_buffer", -- удалить буфер в insert mode
+--      },
+        n = {
+          ["D"] = "delete_buffer",     -- удалить буфер в normal mode
+        },
+      },
+    },
+  },
+})
+
+
 -- пробел как leader
 vim.g.mapleader = " "
 
@@ -136,6 +153,7 @@ vim.opt.clipboard = "unnamedplus"
 -- Telescope keymap
 vim.api.nvim_set_keymap('n', '<leader>ff', ':Telescope find_files<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>fg', ':Telescope live_grep<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>bb", ":Telescope buffers<CR>", { noremap = true, silent = true })
 
 -- Дерево файлов
 vim.api.nvim_set_keymap('n', '<leader>e', ':Neotree reveal toggle<CR>', { silent = true })
