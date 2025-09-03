@@ -45,7 +45,79 @@ require("lazy").setup({
         })
 
       end
+    },
+    -- LSP + Mason + Autocomplete
+    {
+      "williamboman/mason.nvim",
+      config = true
+    },
+    {
+      "williamboman/mason-lspconfig.nvim",
+      dependencies = { "neovim/nvim-lspconfig" },
+      config = function()
+        require("mason").setup()
+        require("mason-lspconfig").setup({
+          ensure_installed = { "ts_ls", "angularls" },
+        })
+
+        local lspconfig = require("lspconfig")
+
+        -- Общие keymaps для LSP
+        local on_attach = function(_, bufnr)
+          local opts = { noremap = true, silent = true, buffer = bufnr }
+          vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+          vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+          vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+          vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
+          vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
+        end
+
+        -- Настройка TypeScript/JavaScript (tsserver)
+        lspconfig.ts_ls.setup({
+          on_attach = on_attach,
+          capabilities = require("cmp_nvim_lsp").default_capabilities(),
+        })
+
+        -- Настройка Angular
+        lspconfig.angularls.setup({
+          on_attach = on_attach,
+          capabilities = require("cmp_nvim_lsp").default_capabilities(),
+        })
+      end
+    },
+    {
+      "hrsh7th/nvim-cmp",
+      dependencies = {
+        "hrsh7th/cmp-nvim-lsp",
+        "hrsh7th/cmp-buffer",
+        "hrsh7th/cmp-path",
+        "L3MON4D3/LuaSnip"
+      },
+      config = function()
+        local cmp = require("cmp")
+        cmp.setup({
+          mapping = {
+            ["<C-Space>"] = cmp.mapping.complete(),
+            ["<CR>"] = cmp.mapping.confirm({ select = true }),
+            ["<C-n>"] = cmp.mapping.select_next_item(),
+            ["<C-p>"] = cmp.mapping.select_prev_item(),
+          },
+          sources = {
+            { name = "nvim_lsp" },
+            { name = "buffer" },
+            { name = "path" },
+          },
+          snippet = {
+            expand = function(args)
+              require("luasnip").lsp_expand(args.body)
+            end,
+          },
+        })
+      end
     }
+
 })
 
 -- пробел как leader
