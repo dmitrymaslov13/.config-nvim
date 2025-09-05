@@ -57,7 +57,12 @@ require("lazy").setup({
       config = function()
         require("mason").setup()
         require("mason-lspconfig").setup({
-          ensure_installed = { "ts_ls", "angularls" },
+          ensure_installed = { 
+              "ts_ls", 
+              "angularls",
+              "dockerls",                     -- Dockerfile
+              "docker_compose_language_service", -- docker-compose.yml
+          },
         })
 
         local lspconfig = require("lspconfig")
