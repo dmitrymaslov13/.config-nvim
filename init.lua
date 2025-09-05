@@ -70,13 +70,22 @@ require("lazy").setup({
         -- Общие keymaps для LSP
         local on_attach = function(_, bufnr)
           local opts = { noremap = true, silent = true, buffer = bufnr }
+
+          -- Девинишены
           vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
           vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+
+          -- Инфа
           vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+
+          -- Экшены
           vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
           vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+          
+          -- Диагностика
           vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
           vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
+          vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts)
         end
 
         -- Настройка TypeScript/JavaScript (tsserver)
