@@ -16,7 +16,9 @@ require("lazy").setup({
         "nvim-telescope/telescope.nvim", 
         dependencies = { "nvim-lua/plenary.nvim" } 
     },
-    
+
+    { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
+
     {
       "nvim-neo-tree/neo-tree.nvim",
       branch = "v3.x",
@@ -163,6 +165,11 @@ vim.opt.expandtab = true
 vim.opt.smartindent = true
 vim.opt.mouse = "a"
 vim.opt.clipboard = "unnamedplus"
+vim.opt.swapfile = false
+vim.opt.backup = false
+vim.opt.writebackup = false
+
+vim.cmd.colorscheme "catppuccin-macchiato"
 
 -- Telescope keymap
 vim.api.nvim_set_keymap('n', '<leader>ff', ':Telescope find_files<CR>', { noremap = true, silent = true })
