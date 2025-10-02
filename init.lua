@@ -1,23 +1,47 @@
--- bootstrap lazy.nvim
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    "git", "clone", "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable", lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
+local bootstrapModule = require("bootstrap")
+
+bootstrapModule.bootstrap()
 
 -- плагины
 require("lazy").setup({
-      -- Telescope для поиска файлов
-    { 
-        "nvim-telescope/telescope.nvim", 
-        dependencies = { "nvim-lua/plenary.nvim" } 
+    -- Telescope для поиска файлов
+    {
+        "nvim-telescope/telescope.nvim",
+        dependencies = { "nvim-lua/plenary.nvim" }
     },
 
+    -- Telescope для поиска файлов
     { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
+
+    -- Сессии
+    {
+        "rmagatti/auto-session",
+        config = function()
+            -- Обязательно включаем локальные опции сессий
+            vim.o.sessionoptions = "buffers,curdir,tabpages,winpos,winsize,localoptions"
+
+            require("auto-session").setup {
+              log_level = "info",
+              auto_session_enable_last_session = false,  -- восстанавливать последнюю сессию
+              auto_session_root_dir = vim.fn.stdpath("data").."/sessions/",
+              session_lens_enable = true,
+            }
+
+            -- Подключение сессии если была в текущей директории
+            vim.api.nvim_create_autocmd("VimEnter", {
+              callback = function()
+                local cwd = vim.fn.getcwd()
+                local session_name = vim.fn.fnamemodify(cwd, ":p:h:t") -- имя сессии по имени папки
+                local session_path = vim.fn.stdpath("data").."/sessions/"..session_name..".vim"
+
+                if vim.fn.filereadable(session_path) == 1 then
+                  vim.cmd("silent! source " .. session_path)
+                end
+              end
+            })
+
+        end
+    },
 
     {
       "nvim-neo-tree/neo-tree.nvim",
@@ -29,17 +53,24 @@ require("lazy").setup({
       },
       config = function()
         require("neo-tree").setup({
+          sources = { "filesystem", "git_status", "buffers" }, -- три режима
+          source_selector = {
+            winbar = true, -- отображать переключатель сверху панели
+            show_scrolled_off_parent = false,
+            separator = " | ", -- разделитель между кнопками
+            content_layout = "center",
+            tabs_layout = "equal", -- равномерные вкладки
+          },
           window = {
-            position = "float", -- 👈 открываем дерево по центру экрана
+            position = "left", -- 👈 открываем дерево по центру экрана
             width = 50,
-            height = 20,
           },
           follow_current_file = {
               enabled = true,   -- 👈 следим за текущим файлом
               leave_dirs_open = false, -- закрывать несвязанные папки
           },
           filesystem = {
-            filtered_items = { 
+            filtered_items = {
                 hide_dotfiles = false, -- показывать скрытые файлы
                 hide_gitignored = true,
             },
@@ -53,17 +84,36 @@ require("lazy").setup({
       "williamboman/mason.nvim",
       config = true
     },
+
+    {
+      "akinsho/bufferline.nvim",
+      version = "*",
+      dependencies = { "nvim-tree/nvim-web-devicons" },
+      config = function()
+        require("bufferline").setup({
+          options = {
+            diagnostics = "nvim_lsp",       -- показывать ошибки от LSP
+            separator_style = "slant",      -- стиль разделителей: "slant", "thick", "thin"
+            show_buffer_close_icons = false,
+            show_close_icon = true,
+            always_show_bufferline = true,
+          },
+        })
+        end
+    },
+
     {
       "williamboman/mason-lspconfig.nvim",
       dependencies = { "neovim/nvim-lspconfig" },
       config = function()
         require("mason").setup()
         require("mason-lspconfig").setup({
-          ensure_installed = { 
-              "ts_ls", 
+          ensure_installed = {
+              "ts_ls",
+              "lua_ls",
               "angularls",
-              "dockerls",                     -- Dockerfile
-              "docker_compose_language_service", -- docker-compose.yml
+              "dockerls", -- Dockerfile
+              "docker_compose_language_service", -- docker-compose.yaml
           },
         })
 
@@ -83,12 +133,26 @@ require("lazy").setup({
           -- Экшены
           vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
           vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
-          
+
           -- Диагностика
-          vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
-          vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
+          vim.keymap.set("n", "[d", bufnr.goto_prev, opts)
+          vim.keymap.set("n", "]d", bufnr.goto_next, opts)
           vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts)
         end
+
+        lspconfig.lua_ls.setup({
+          settings = {
+            Lua = {
+              diagnostics = {
+                globals = { "vim" }, -- говорим, что vim глобален
+              },
+              workspace = {
+                library = vim.api.nvim_get_runtime_file("", true), -- Neovim runtime
+                checkThirdParty = false,
+              },
+            },
+          },
+        })
 
         -- Настройка TypeScript/JavaScript (tsserver)
         lspconfig.ts_ls.setup({
@@ -103,6 +167,27 @@ require("lazy").setup({
         })
       end
     },
+
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy", -- чтобы не грузился сразу
+      config = function()
+        require("which-key").setup({
+            plugins = {
+                presets = {
+                    operators = true, -- d, y, etc.
+                    motions   = true, -- w, e, etc.
+                    text_objects = true, -- aw, iw, etc.
+                    windows = true, -- <c-w>
+                    nav = true, -- gj, gk, etc.
+                    z = true, -- folds
+                    g = true, -- git & motions
+                },
+            }
+        })
+      end,
+    },
+
     {
       "hrsh7th/nvim-cmp",
       dependencies = {
@@ -141,9 +226,6 @@ require("telescope").setup({
     buffers = {
       sort_mru = true,      -- сортировать по последнему использованию
       mappings = {
---        i = {
---         ["<C-D>"] = "delete_buffer", -- удалить буфер в insert mode
---      },
         n = {
           ["D"] = "delete_buffer",     -- удалить буфер в normal mode
         },
@@ -151,7 +233,6 @@ require("telescope").setup({
     },
   },
 })
-
 
 -- пробел как leader
 vim.g.mapleader = " "
@@ -168,16 +249,23 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.swapfile = false
 vim.opt.backup = false
 vim.opt.writebackup = false
+vim.opt.undofile = true
 
 vim.cmd.colorscheme "catppuccin-macchiato"
 
--- Telescope keymap
-vim.api.nvim_set_keymap('n', '<leader>ff', ':Telescope find_files<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>fg', ':Telescope live_grep<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader>bb", ":Telescope buffers<CR>", { noremap = true, silent = true })
+
+-- Telescope
+vim.keymap.set("n", "<leader>ff", "<Cmd>Telescope find_files<CR>", { desc = "Найти файл" })
+vim.keymap.set("n", "<leader>fg", "<Cmd>Telescope live_grep<CR>", { desc = "Найти файл содержащий строку" })
+vim.keymap.set("n", "<leader>bl", "<Cmd>Telescope buffers<CR>", { desc = "Список буферов" })
+
 
 -- Дерево файлов
-vim.api.nvim_set_keymap('n', '<leader>e', ':Neotree reveal toggle<CR>', { silent = true })
+vim.keymap.set("n", "<leader>e", function()
+  require("neo-tree.command").execute({ toggle = true })
+end, { desc = "Toggle Neo-tree" })
+-- vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal toggle<CR>", { desc = "Дерево файлов" })
+-- vim.keymap.set("n", "<leader>e", "<Cmd>Neotree reveal toggle<CR>", { desc = "Дерево файлов" })
 -- мапы внутри дерева (в normal mode)
 -- a → создать файл/папку
 -- d → удалить
@@ -185,4 +273,17 @@ vim.api.nvim_set_keymap('n', '<leader>e', ':Neotree reveal toggle<CR>', { silent
 -- <CR> → открыть файл в текущем окне
 
 -- Сброс поиска
-vim.api.nvim_set_keymap('n', '<leader>h', ':nohl<CR>', { silent = true })
+vim.keymap.set("n", "<leader>h", "<Cmd>nohl<CR>", { desc = "Сброс подсветки поиска" })
+
+-- Буферы
+vim.keymap.set("n", "<leader>bn", "<Cmd>BufferLineCycleNext<CR>", { desc = "Следующий буфер" })
+vim.keymap.set("n", "<leader>bp", "<Cmd>BufferLineCyclePrev<CR>", { desc = "Предыдущий буфер" })
+vim.keymap.set("n", "<leader>bd", "<Cmd>bdelete<CR>", { desc = "Закрыть буфер" })
+
+-- Visual mode: сдвиг блока и сохранение выделения
+vim.keymap.set("v", "<", "<gv", { desc = "Сдвинуть влево и остаться в VISUAL" })
+vim.keymap.set("v", ">", ">gv", { desc = "Сдвинуть вправо и остаться в VISUAL" })
+
+-- Visual block mode (Ctrl+v) — тоже сохраняем выделение
+vim.keymap.set("x", "<", "<gv", { desc = "Сдвинуть блок влево и остаться в VISUAL" })
+vim.keymap.set("x", ">", ">gv", { desc = "Сдвинуть блок вправо и остаться в VISUAL" })
